@@ -32,6 +32,11 @@
                                              (make-node 280 "r"
                                                         (make-node 275 "r" empty empty)
                                                         (make-node 290 "t" empty empty)))))
+(define-struct triangle (point1 point2 point3))
+
+(define Triangle1 (make-triangle (make-posn 8 1) (make-posn 18 1) (make-posn 10 1)))
+(define Triangle2 (make-triangle (make-posn 8 5) (make-posn 18 5) (make-posn 10 5)))
+(define Triangle3 (make-triangle (make-posn 1 0) (make-posn 3 0) (make-posn 1.5 3)))
 ;; ***************************************************
 ;; FUNCTION DEFINITIONS
 ;; ***************************************************
@@ -448,25 +453,19 @@
 ;; (verify-bst tree) consumes a tree and checks whether it's a valid binary search tree or not
 ;; verify: BinarySearchTree -> Bool 
 (define (verify-bst tree)
-  (local [(define (check-right tree)
+  (local [(define (check-branch tree branch)
             (cond
               [(and (< (node-ssn tree) (node-ssn (node-right tree)))
            (< (node-ssn tree) (find-min (node-right tree))))
-               (and (verify-bst (node-right (node-right tree))) (verify-bst (node-left (node-right tree))))]
-              [else false]))
-
-          (define (check-left tree)
-            (cond
-              [(and(> (node-ssn tree) (node-ssn (node-left tree)))
-           (> (node-ssn tree) (find-max (node-left tree))))
-            (and (verify-bst (node-right (node-left tree))) (verify-bst (node-left (node-left tree))))]
+               (and (verify-bst (node-right branch)) (verify-bst (node-left branch)))]
               [else false]))]
+
   (cond
     [(empty? tree)true]
     [(and (empty? (node-right tree)) (empty? (node-left tree)))true]
-    [(empty? (node-right tree)) (check-left tree)]
-    [(empty? (node-left tree)) (check-right tree)]
-    [ else (and (check-left tree) (check-right tree))])))
+    [(empty? (node-right tree)) (check-branch tree (node-left tree))]
+    [(empty? (node-left tree)) (check-branch tree (node-right tree))]
+    [ else (and (check-branch tree (node-left tree)) (check-branch tree (node-right tree)))])))
 
 (check-expect (verify-bst tree)true)
 (check-expect (verify-bst empty) true)
@@ -487,3 +486,73 @@
 (check-expect (produce-path  165 tree) (list 200 175))
 (check-expect (produce-path 230 tree) (list 200 250 225))
 (check-expect (produce-path 500 tree)false)
+
+;; ***************************************************
+;;(heronformula point1 point2 point3) calculates the area of a triangle made by three points by taking input
+;;    the coordinates of those three points and using heron's formula 
+ 
+(define (heronformula point1 point2 point3)
+  (* 0.5 (abs (-(* (- (posn-x point1) (posn-x point3))
+             (- (posn-y point2) (posn-y point1)))
+           (*(- (posn-x point1) (posn-x point2))
+            (- (posn-y point3) (posn-y point1)))))))
+
+;; ***************************************************
+
+;; (triangle-area Triangle) uses heron's formula to check whether the three points are collinear or not.
+;;     If they're not collinear, it computes the area of the triangle made by the three points.
+;;        Collinearity is checked by using the concept that the area between three points on a line is zero.
+;; triangle-area: Struct -> Nat
+;; Examples: 
+(check-expect (triangle-area Triangle2 )false)
+
+(define (triangle-area Triangle)
+  (cond
+    [ (not (= 0
+    (heronformula (triangle-point1 Triangle) (triangle-point2 Triangle) (triangle-point3 Triangle))))
+      (heronformula (triangle-point1 Triangle) (triangle-point2 Triangle) (triangle-point3 Triangle))] 
+    [ else false]))
+  
+;; Tests:
+(check-expect (triangle-area Triangle1)false)
+(check-expect (triangle-area Triangle3) 3)
+
+;; **************************************************
+
+;; (expt-increase list n) consumes a list of numbers and produces a number made up of digits
+;;   in the list, where the first number in the list is the least significant number.
+;;     The function takes input of n to account for the significance of the number
+;;      and multiply it by 10 to the power of n
+;; expt-increase: (listof Nat) Num-> Nat
+;; requires that the numbers in the list are between 0 and 9, inclusive
+;;Examples:
+(check-expect (expt-increase empty 10) 0)
+(check-expect (expt-increase (list 4 5 7 8) 2) 875400)
+
+(define (expt-increase list n)
+(cond
+  [ (empty? list) 0] 
+  [ else (+ (expt-increase (rest list) (+ 1 n)) (* (first list)(expt 10 n)))]))
+
+;;Tests:
+
+
+
+;; ***************************************************
+;; (digits->nat list) consumes a  list of numbers and produces a natural number where the first
+;;   digit in the consumed list becomes the least significant digit in the produced number
+;;    and the last digit becomes the most significant digit
+;; digits->nat: (listof Nat) -> Nat
+;; requires that numbers in the list is between 0 and 9 inclusive
+;; Examples: 
+(check-expect (digits->nat (list 1 2 0 0 0))21)
+(check-expect (digits->nat (list 5 6 0 8 9 0))98065)
+(check-expect (digits->nat empty) 0)
+
+(define (digits->nat list)
+  (expt-increase list 0))
+
+;; Tests:
+(check-expect (digits->nat (list 0 0 0 0)) 0)
+(check-expect (digits->nat '(1)) 1)
+(check-expect (digits->nat (list 1 2 3))321)
