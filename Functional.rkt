@@ -486,19 +486,7 @@
 (check-expect (produce-path  165 tree) (list 200 175))
 (check-expect (produce-path 230 tree) (list 200 250 225))
 (check-expect (produce-path 500 tree)false)
-
 ;; ***************************************************
-;;(heronformula point1 point2 point3) calculates the area of a triangle made by three points by taking input
-;;    the coordinates of those three points and using heron's formula 
- 
-(define (heronformula point1 point2 point3)
-  (* 0.5 (abs (-(* (- (posn-x point1) (posn-x point3))
-             (- (posn-y point2) (posn-y point1)))
-           (*(- (posn-x point1) (posn-x point2))
-            (- (posn-y point3) (posn-y point1)))))))
-
-;; ***************************************************
-
 ;; (triangle-area Triangle) uses heron's formula to check whether the three points are collinear or not.
 ;;     If they're not collinear, it computes the area of the triangle made by the three points.
 ;;        Collinearity is checked by using the concept that the area between three points on a line is zero.
@@ -507,36 +495,22 @@
 (check-expect (triangle-area Triangle2 )false)
 
 (define (triangle-area Triangle)
+  ;;(heronformula point1 point2 point3) calculates the area of a triangle made by three points by taking input
+    ;;the coordinates of those three points and using heron's formula 
+  (local [(define (heronformula point1 point2 point3)
+  (* 0.5 (abs (-(* (- (posn-x point1) (posn-x point3))
+             (- (posn-y point2) (posn-y point1)))
+           (*(- (posn-x point1) (posn-x point2))
+            (- (posn-y point3) (posn-y point1)))))))]
   (cond
     [ (not (= 0
     (heronformula (triangle-point1 Triangle) (triangle-point2 Triangle) (triangle-point3 Triangle))))
       (heronformula (triangle-point1 Triangle) (triangle-point2 Triangle) (triangle-point3 Triangle))] 
-    [ else false]))
+    [ else false])))
   
 ;; Tests:
 (check-expect (triangle-area Triangle1)false)
 (check-expect (triangle-area Triangle3) 3)
-
-;; **************************************************
-
-;; (expt-increase list n) consumes a list of numbers and produces a number made up of digits
-;;   in the list, where the first number in the list is the least significant number.
-;;     The function takes input of n to account for the significance of the number
-;;      and multiply it by 10 to the power of n
-;; expt-increase: (listof Nat) Num-> Nat
-;; requires that the numbers in the list are between 0 and 9, inclusive
-;;Examples:
-(check-expect (expt-increase empty 10) 0)
-(check-expect (expt-increase (list 4 5 7 8) 2) 875400)
-
-(define (expt-increase list n)
-(cond
-  [ (empty? list) 0] 
-  [ else (+ (expt-increase (rest list) (+ 1 n)) (* (first list)(expt 10 n)))]))
-
-;;Tests:
-
-
 
 ;; ***************************************************
 ;; (digits->nat list) consumes a  list of numbers and produces a natural number where the first
@@ -550,9 +524,15 @@
 (check-expect (digits->nat empty) 0)
 
 (define (digits->nat list)
-  (expt-increase list 0))
+  (local [(define (expt-increase list n)
+(cond
+  [ (empty? list) 0] 
+  [ else (+ (expt-increase (rest list) (+ 1 n)) (* (first list)(expt 10 n)))]))]
+
+  (expt-increase list 0)))
 
 ;; Tests:
 (check-expect (digits->nat (list 0 0 0 0)) 0)
+(check-expect (digits->nat empty) 0)
 (check-expect (digits->nat '(1)) 1)
 (check-expect (digits->nat (list 1 2 3))321)
